@@ -7,6 +7,7 @@ C:\Users\user\PycharmProjects\myproject> C:\PathTo\pyinstaller.exe --onefile --w
 import Tkinter as tk
 import zipfile
 import ImageTk
+import tkFont
 from PIL import Image
 import StringIO
 import tkFileDialog as fd
@@ -66,9 +67,11 @@ def createToolTip(widget, text):
 # Main windows
 
 root = tk.Tk() # create a Tk root window
+root.wm_title("Plant Image Classifier")
 # Window variables
-w = 800 # width for the Tk root
-h = 690 # height for the Tk root
+w = 1024 # width for the Tk root
+h = 730 # height for the Tk root
+tkFont.Font(family="Times", size=10, weight=tkFont.BOLD)
 ws = root.winfo_screenwidth() # width of the screen
 hs = root.winfo_screenheight() # height of the screen
 x = (ws/2) - (w/2)
@@ -98,11 +101,12 @@ def debug(o):
     print "debug: "+o
 
 def show_image(f):
-    global pi
+    global pi,canvas_s
+    ww,hh = 500,500
     current_image = Image.open(f)
-    current_image.thumbnail((400,500),Image.ANTIALIAS)
+    current_image.thumbnail((ww,hh),Image.ANTIALIAS)
     pi = ImageTk.PhotoImage(current_image)
-    sprite = w.create_image(400/2, 500/2, image=pi)
+    sprite = w.create_image(canvas_s/2, canvas_s/2, image=pi)
 
 def load(img):
     images.append(img)
@@ -175,14 +179,11 @@ def ask(): # Open image file and see if xml exists
         # prompt user
         # if user says overwrite file, set autosave
         # if user doesn't want to overwrite, only import it without autosave
-        result = tkMessageBox.askquestion("Delete", "Xml file for this image already exists. Do you want to overwrite it?", icon='warning')
-        if result == "yes":
-            autosave = True
-            debug("XML exists, overwrite")
-        else:
-            # IMPORT XML
-            debug("XML exists, only import (READ ONLY)")
-            import_xml(xml_path)
+        m = tkMessageBox.showwarning(message="Associated annotations already exist for this image, further modifications will overwrite the file.")
+
+        debug("XML exists, overwrite")
+        autosave = True
+        import_xml(xml_path)
 
     else:
         debug("XML doesn't exist")
@@ -201,6 +202,37 @@ def export(): # Export a single file in xml format
     pickle.dump(memory, open("save.p", "wb"))
 
 ##################
+def about():
+    print "HELP"
+
+def resize(s):
+    print s
+
+def toolkit(event,i,button):
+    if i == 0:
+        button.after(200,ask)
+    elif i == 5:
+        about()
+    else:
+        resize(button_image_paths[i])
+
+
+button_images = []
+button_image_paths = ["open","original","optimal","zoomin","zoomout","qm","label"]
+def createButton(i,canvas):
+    global button_images
+    if button_image_paths[i] == "label":
+        label = tk.Label(text="Autosave is enabled",pady=1)
+        canvas.create_window(87*i+10,10, anchor=tk.NW,window=label)
+        return
+    button = tk.Button(canvas)
+    img = Image.open(button_image_paths[i]+".jpg")
+    img.thumbnail((40,40),Image.ANTIALIAS)
+    ip = ImageTk.PhotoImage(img)
+    button_images.append(ip)
+    button.config(image=ip,width="30",height="30",relief=tk.RAISED)
+    canvas.create_window(40*i+10,10, anchor=tk.NW, window=button)
+    button.bind("<Button-1>",lambda event,options=i,myself=button: toolkit(event,options,myself))
 
 # Create windows
 current_toplevel = None
@@ -208,16 +240,24 @@ current_toplevel = None
 l1 = tk.Label(root) # bg="black",
 l1.pack(pady=0,fill=tk.X)
 
-w = tk.Canvas(l1, width=400, height=550)
-w.pack(side=tk.LEFT)
-w.create_rectangle(0, 0, 400, 550, fill="black")
+canvas_s = 655
+frame_canvas = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.SUNKEN ,borderwidth =4)
+frame_canvas.pack(side=tk.LEFT,padx=20)
+w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s)
+w.pack()
+w.create_rectangle(0, 0, canvas_s, canvas_s, fill="black")
 
-frame = tk.Frame(l1,width=300, height=800, bg="gray", colormap="new", relief=tk.GROOVE ,borderwidth =4)
-frame.pack(pady=0,fill=tk.BOTH)
+for i in range(len(button_image_paths)):
+    createButton(i,w)
+
+frame = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.RIDGE ,borderwidth =4)
+frame.pack(pady=30,padx=10,fill=tk.BOTH)
+
+
 # Open Image File
-label_button =  tk.Label(l1, width=50)
-b = tk.Button(frame, text="Open Image File", command=ask, width=14, height = 1)
-b.pack(pady=20)
+#label_button =  tk.Label(l1, width=50)
+#b = tk.Button(frame, text="Open Image File", command=ask, width=14, height = 1)
+#b.pack(pady=20,padx=0)
 
 # Hover effect
 popup_canvas = None
@@ -293,12 +333,15 @@ def fce(myX):
                 label.pack()
                 label.grid(row=yy,column=xx)
                 label.bind("<Button-1>",lambda event,options=x_option,e=xx+wn*yy: popup_command(e,options))
-                createToolTip(label, OPTION_NAMES[x_option][xx+wn*yy])
+                #createToolTip(label, OPTION_NAMES[x_option][xx+wn*yy]) # to remove tooltips
 
     return pop
 
 def enter_field(sv):
-    pass
+    global autosave
+    debug("Trying to save from text entry capture, autosave is "+str(autosave))
+    if autosave:
+        try_to_save()
 
 ################## Fields
 labels = []
@@ -307,16 +350,17 @@ vars = []
 string_vars = []
 
 def field(event,option):
-    global autosave
+    pass
+    '''global autosave
     debug("Trying to save from text entry capture, autosave is "+str(autosave))
     if autosave:
-        try_to_save()
+        try_to_save()'''
 
 for i in range(9):#len(OPTIONS)):
 
-    myframe = tk.Frame(l1, width=300, height=800, bg="grey", colormap="new", relief=tk.GROOVE, borderwidth=4)
+    myframe = tk.Frame(frame, width=300, height=800,  colormap="new", relief=tk.FLAT, borderwidth=4)
     myframe.pack(pady=0, fill=tk.BOTH)
-    label_part = tk.Label(myframe,  text=OPTION_LABELS[i])
+    label_part = tk.Label(myframe,  text=OPTION_LABELS[i],font=tkFont.Font(family="Times", size=12))
     label_part.pack()
 
     if "FIELD" in OPTION_NAMES[i][0]:
@@ -325,20 +369,21 @@ for i in range(9):#len(OPTIONS)):
         string_vars.append(sv)
         e = tk.Entry(myframe,textvariable=sv)
         e.bind("<Return>",lambda event,field_option=i:field(event,field_option))
-        e.pack()
+        e.pack(pady=5)
         # Create a text field
     else:
         var = tk.StringVar(root)
         var.set(OPTION_NAMES[i][0]) # default value
         vars.append(var)
         args_1 = OPTION_NAMES[i]
-        myframe_field = tk.Frame(myframe, width=300, height=800, bg="grey", colormap="new", relief=tk.GROOVE, borderwidth=4)
+        myframe_field = tk.Frame(myframe, width=300, height=800,  colormap="new", relief=tk.FLAT, borderwidth=4)
         myframe_field.pack(pady=0, fill=tk.Y)
 
         r = tk.OptionMenu(myframe_field, var, *(args_1), command = selection)
-        r.config(width=30,height = 1)
+
+        r.config(width=30,height = 1,font=tkFont.Font(family="Times", size=11))
         r.pack(side=tk.LEFT)
-        b = tk.Button(myframe_field, text="Pick", command=fce(i), width=3, height = 1)
+        b = tk.Button(myframe_field, text="+", command=fce(i), width=3, height = 1)
         b.pack(side=tk.RIGHT)
 
 root.mainloop() # starts the mainloop
