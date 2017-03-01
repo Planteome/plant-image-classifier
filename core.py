@@ -380,10 +380,11 @@ for i in range(9):#len(OPTIONS)):
 
         r = tk.OptionMenu(myframe_field, var, *(args_1), command = selection)
 
-        r.config(width=30,height = 1,font=tkFont.Font(family="Times", size=11))
+        r.config(width=25,height = 1,font=tkFont.Font(family="Times", size=11))
         r.pack(side=tk.LEFT)
-        b = tk.Button(myframe_field, text="+", command=fce(i), width=3, height = 1)
-        b.pack(side=tk.RIGHT)
+        if i != 0:
+            b = tk.Button(myframe_field, text="+", command=fce(i), width=2, height = 1)
+            b.pack(side=tk.RIGHT)
 
 
 
