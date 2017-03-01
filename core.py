@@ -89,9 +89,9 @@ OPTION_LABELS = ["Leaf","Leaf Type","Leaf Shape","Leaf base shape","Leaf tip sha
 OPTION_NAMES = [["YES","NO"],["SIMPLE","COMPOUND"],["ACEROSE","AWL-SHAPED","GLADIATE","HASTATE","CORDATE","DELTOID","LANCEOLATE","LINEAR","ELLIPTIC","ENSIFORM","LYRATE",
                    "OBCORDATE","FALCATE","FLABELLATE","OBDELTOID","OBELLIPTIC","OBLANCEOLATE","OBLONG","PERFOLIATE","QUADRATE","OBOVATE","ORBICULAR",
                    "RENIFORM","RHOMBIC","OVAL","OVATE","ROTUND","SAGITTATE","PANDURATE","PELTATE","SPATULATE","SUBULATE"],
-                   ["AEQUILATERAL","ATTENUATE","AURICULATE","CORDATE","CUNEATE","HASTATE","OBLIQUE","ROUNDED","SAGGITATE","TRUNCATE"],
+                   ["AEQUILATERAL","ATTENUATE","AURICULATE","CORDATE","CUNEATE","HASTATE","OBLIQUE","ROUNDED","SAGITTATE","TRUNCATE"],
                    ["CIRROSE","CUSPIDATE","ACUMINATE","ACUTE","EMARGINATE","MUCRONATE","APICULATE","ARISTATE","MUCRONULATE","MUTICOUS","ARISTULATE","CAUDATE","OBCORDATE","OBTUSE","RETUSE","ROUNDED","SUBACUTE","TRUNCATE"]
-                   ,["BIDENTATE","BIFID","DENTATE","DENTICULATE","BIPINNATIFID","BISERRATE","DIGITATE","DISSECTED","CLEFT","CRENATE","DIVIDED","ENTIRE","CRENULATE","CRISPED","EROSE","INCISED","INVOLUTE","LACERATE","PEDATE","PINNATIFID","LACINIATE","LOBED","PINNATILOBATE","PINNATISECT","LOBULATE","PALMATIFID","REPAND","REVOLUTE","PALAMTISECT","PARTED","RUNCINATE","SERRATE"],["RETICULATE","PARALLEL"],["SPECIES FIELD"],["CONTRIBUTOR FIELD"]]
+                   ,["BIDENTATE","BIFID","DENTATE","DENTICULATE","BIPINNATIFID","BISERRATE","DIGITATE","DISSECTED","CLEFT","CRENATE","DIVIDED","ENTIRE","CRENULATE","CRISPED","EROSE","INCISED","INVOLUTE","LACERATE","PEDATE","PINNATIFID","LACINIATE","LOBED","PINNATILOBATE","PINNATISECT","LOBULATE","PALMATIFID","REPAND","REVOLUTE","PALMATISECT","PARTED","RUNCINATE","SERRATE","SERRULATE","SINUATE","TRIDENTATE","TRIFID","TRIPARTITE","TRIPINNATIFID"],["RETICULATE","PARALLEL"],["SPECIES FIELD"],["CONTRIBUTOR FIELD"]]
 current_image = None
 pi = None
 autosave = False
@@ -124,7 +124,6 @@ def try_to_save():
     ET.SubElement(root,"ImageFileName").text = os.path.basename(f+".jpg")
     for label in OPTION_LABELS:
         true_label = label.replace(" ","")
-        print true_label
         if "FIELD" in OPTION_NAMES[OPTION_LABELS.index(label)][0]:
             ET.SubElement(root,true_label).text = str(string_vars[len(OPTION_LABELS)-1-OPTION_LABELS.index(label)].get())
         else:
@@ -143,7 +142,6 @@ def import_xml(xml_path):
     # We need to construct vars and string vars from the fields
     e = ET.parse(xml_path).getroot()
     for atype in e:
-        print atype.tag, atype.text
         for label in OPTION_LABELS:
             replaced_label = str(label)
             replaced_label = replaced_label.replace(" ","")
@@ -291,7 +289,7 @@ def fce(myX):
         global popup_images, popup_canvas, current_toplevel
 
         true_width = 155
-        true_height = 145
+        true_height = 156
         popup_images = []
         toplevel = tk.Toplevel()
         current_toplevel = toplevel
@@ -325,8 +323,9 @@ def fce(myX):
                 if xx+wn*yy >= n:
                     break
 
-                img = Image.open("leaf.jpg")
-                img.thumbnail((150,150),Image.ANTIALIAS)
+                img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy])+".jpg")
+                print OPTION_NAMES[x_option]
+                img = img.resize((150,150),Image.ANTIALIAS)
                 ip = ImageTk.PhotoImage(img)
                 popup_images.append(ip)
                 label = tk.Label(popup_frame, image=ip)
@@ -385,5 +384,7 @@ for i in range(9):#len(OPTIONS)):
         r.pack(side=tk.LEFT)
         b = tk.Button(myframe_field, text="+", command=fce(i), width=3, height = 1)
         b.pack(side=tk.RIGHT)
+
+
 
 root.mainloop() # starts the mainloop
