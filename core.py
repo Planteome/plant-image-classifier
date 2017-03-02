@@ -100,13 +100,33 @@ current_file = None
 def debug(o):
     print "debug: "+o
 
+def update_image():
+    global root
+    root.after(10,update_image)
+    show_image(current_file)
+
+open_once = False
+resize_once = False
+sprite = None
 def show_image(f):
-    global pi,canvas_s
+    global pi,canvas_s, zoom, x_image,y_image, current_image, open_once, resize_once, button_image_paths, sprite
     ww,hh = 500,500
-    current_image = Image.open(f)
-    current_image.thumbnail((ww,hh),Image.ANTIALIAS)
-    pi = ImageTk.PhotoImage(current_image)
-    sprite = w.create_image(canvas_s/2, canvas_s/2, image=pi)
+
+    w.delete(sprite)
+
+    if open_once == False or current_image == None or not resize_once:
+        print "THIS PART"
+        try:
+            current_image = Image.open(f)
+            open_once = True
+            current_image = current_image.resize((int(round(ww/(0.5**zoom))),int(round(hh/(0.5**zoom)))),Image.ANTIALIAS)
+            pi = ImageTk.PhotoImage(current_image)
+            resize_once = True
+        except:
+            debug("Can't open file")
+            return
+    else:
+        sprite = w.create_image(x_image+canvas_s/2, y_image+canvas_s/2, image=pi)
 
 def load(img):
     images.append(img)
@@ -161,9 +181,10 @@ def check_image_with_pil(path):
      return True
 
 def ask(): # Open image file and see if xml exists
-    global current_image, autosave, vars, current_file
+    global current_image, autosave, vars, current_file,zoom, open_once
 
     autosave = False
+    open_once = False
     f = fd.askopenfilename()
     # Open zip file
     open = check_image_with_pil(f)
@@ -188,7 +209,7 @@ def ask(): # Open image file and see if xml exists
         autosave = True
 
     debug("After importing image, autosave is "+str(autosave))
-    show_image(f)
+    zoom = 0
 
 
 def export(): # Export a single file in xml format
@@ -203,8 +224,24 @@ def export(): # Export a single file in xml format
 def about():
     print "HELP"
 
+zoom = 0
+x_image = 0
+y_image = 0
 def resize(s):
-    print s
+    global zoom,resize_once, x_image, y_image
+    resize_once = False
+    if s == "zoomin":
+        zoom += 1
+    if s == "zoomout":
+        zoom -= 1
+    if zoom < -2:
+        zoom = -2
+    if zoom > 4:
+        zoom = 4
+    if s == "original":
+        zoom = 0
+        x_image= 0
+        y_image = 0
 
 def toolkit(event,i,button):
     if i == 0:
@@ -225,7 +262,7 @@ def createButton(i,canvas):
         return
     button = tk.Button(canvas)
     img = Image.open(button_image_paths[i]+".jpg")
-    img.thumbnail((40,40),Image.ANTIALIAS)
+    img = img.resize((40,40),Image.ANTIALIAS)
     ip = ImageTk.PhotoImage(img)
     button_images.append(ip)
     button.config(image=ip,width="30",height="30",relief=tk.RAISED)
@@ -241,12 +278,41 @@ l1.pack(pady=0,fill=tk.X)
 canvas_s = 655
 frame_canvas = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.SUNKEN ,borderwidth =4)
 frame_canvas.pack(side=tk.LEFT,padx=20)
-w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s)
+import ttk
+h = ttk.Scrollbar(root, orient = tk.HORIZONTAL)
+v = ttk.Scrollbar(root, orient = tk.VERTICAL)
+w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s,scrollregion = (0, 0, 2000, 2000),yscrollcommand = v.set, xscrollcommand = h.set)
+h['command'] = w.xview
+v['command'] = w.yview
+
+x_p,y_p,x,y = 0,0,0,0
+pressed = 0
+def onPress(e):
+    global pressed
+    pressed = 1
+def onRelease(e):
+    global pressed
+    pressed = 0
+def xy_motion(event):
+    global x,y,x_p,y_p, x_image, y_image
+    x, y = event.x, event.y
+    if pressed:
+        if x-x_p != 0:
+            x_image += x-x_p
+        if y-y_p != 0:
+            y_image += y-y_p
+    x_p = x
+    y_p = y
+
 w.pack()
-w.create_rectangle(0, 0, canvas_s, canvas_s, fill="black")
+w.bind('<Motion>', xy_motion)
+w.bind("<ButtonPress-1>", onPress)
+w.bind("<ButtonRelease-1>", onRelease)
 
 for i in range(len(button_image_paths)):
     createButton(i,w)
+
+w.create_rectangle(0, 0, canvas_s, canvas_s, fill="black")
 
 frame = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.RIDGE ,borderwidth =4)
 frame.pack(pady=30,padx=10,fill=tk.BOTH)
@@ -359,7 +425,7 @@ for i in range(9):#len(OPTIONS)):
 
     myframe = tk.Frame(frame, width=300, height=800,  colormap="new", relief=tk.FLAT, borderwidth=4)
     myframe.pack(pady=0, fill=tk.BOTH)
-    label_part = tk.Label(myframe,  text=OPTION_LABELS[i],font=tkFont.Font(family="Times", size=12))
+    label_part = tk.Label(myframe,  text=OPTION_LABELS[i],font=tkFont.Font(family="Calibri", size=12))
     label_part.pack()
 
     if "FIELD" in OPTION_NAMES[i][0]:
@@ -380,7 +446,7 @@ for i in range(9):#len(OPTIONS)):
 
         r = tk.OptionMenu(myframe_field, var, *(args_1), command = selection)
 
-        r.config(width=25,height = 1,font=tkFont.Font(family="Times", size=11))
+        r.config(width=25,height = 1,font=tkFont.Font(family="Calibri", size=11))
         r.pack(side=tk.LEFT)
         if i != 0:
             b = tk.Button(myframe_field, text="+", command=fce(i), width=2, height = 1)
@@ -388,4 +454,5 @@ for i in range(9):#len(OPTIONS)):
 
 
 
+root.after(30,update_image)
 root.mainloop() # starts the mainloop
