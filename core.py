@@ -115,7 +115,6 @@ def show_image(f):
     w.delete(sprite)
 
     if open_once == False or current_image == None or not resize_once:
-        print "THIS PART"
         try:
             current_image = Image.open(f)
             open_once = True
@@ -123,7 +122,6 @@ def show_image(f):
             pi = ImageTk.PhotoImage(current_image)
             resize_once = True
         except:
-            debug("Can't open file")
             return
     else:
         sprite = w.create_image(x_image+canvas_s/2, y_image+canvas_s/2, image=pi)
@@ -234,8 +232,8 @@ def resize(s):
         zoom += 1
     if s == "zoomout":
         zoom -= 1
-    if zoom < -2:
-        zoom = -2
+    if zoom < -5:
+        zoom = -5
     if zoom > 4:
         zoom = 4
     if s == "original":
@@ -389,7 +387,15 @@ def fce(myX):
                 if xx+wn*yy >= n:
                     break
 
-                img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy])+".jpg")
+                # If in certain group, append 2 to certain category
+                if (x_option == 3 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "CORDATE"):
+                    img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                elif (x_option == 3 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "ROUNDED"):
+                    img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                elif (x_option == 4 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "TRUNCATE"):
+                    img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                else:
+                    img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+".jpg"))
                 print OPTION_NAMES[x_option]
                 img = img.resize((150,150),Image.ANTIALIAS)
                 ip = ImageTk.PhotoImage(img)
