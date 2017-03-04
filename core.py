@@ -1,15 +1,11 @@
 '''Run pyinstaller from your project directory, but call it as the full directory to the .exe like C:\PathTo\Pyinstaller.exe
-
 so your cmd would look something like
-
 C:\Users\user\PycharmProjects\myproject> C:\PathTo\pyinstaller.exe --onefile --windowed myprogram.py'''
 
 import Tkinter as tk
-import zipfile
 import ImageTk
 import tkFont
 from PIL import Image
-import StringIO
 import tkFileDialog as fd
 import tkMessageBox
 import pickle
@@ -76,8 +72,9 @@ ws = root.winfo_screenwidth() # width of the screen
 hs = root.winfo_screenheight() # height of the screen
 x = (ws/2) - (w/2)
 y = (hs/2) - (h/2)
-
 root.geometry('%dx%d+%d+%d' % (w, h, x, y)) # set the dimensions of the screen and where it is placed
+
+#### Intermediate steps
 
 pi = None
 images = []
@@ -93,12 +90,13 @@ OPTION_NAMES = [["YES","NO"],["SIMPLE","COMPOUND"],["ACEROSE","AWL-SHAPED","GLAD
                    ["CIRROSE","CUSPIDATE","ACUMINATE","ACUTE","EMARGINATE","MUCRONATE","APICULATE","ARISTATE","MUCRONULATE","MUTICOUS","ARISTULATE","CAUDATE","OBCORDATE","OBTUSE","RETUSE","ROUNDED","SUBACUTE","TRUNCATE"]
                    ,["BIDENTATE","BIFID","DENTATE","DENTICULATE","BIPINNATIFID","BISERRATE","DIGITATE","DISSECTED","CLEFT","CRENATE","DIVIDED","ENTIRE","CRENULATE","CRISPED","EROSE","INCISED","INVOLUTE","LACERATE","PEDATE","PINNATIFID","LACINIATE","LOBED","PINNATILOBATE","PINNATISECT","LOBULATE","PALMATIFID","REPAND","REVOLUTE","PALMATISECT","PARTED","RUNCINATE","SERRATE","SERRULATE","SINUATE","TRIDENTATE","TRIFID","TRIPARTITE","TRIPINNATIFID"],["RETICULATE","PARALLEL"],["SPECIES FIELD"],["CONTRIBUTOR FIELD"]]
 current_image = None
+current_image_resized = None
 pi = None
 autosave = False
 current_file = None
 
 def debug(o):
-    print "debug: "+o
+    print "debug: "+str(o)
 
 def update_image():
     global root
@@ -109,7 +107,7 @@ open_once = False
 resize_once = False
 sprite = None
 def show_image(f):
-    global pi,canvas_s, zoom, x_image,y_image, current_image, open_once, resize_once, button_image_paths, sprite
+    global pi,canvas_s, zoom, x_image,y_image, current_image, open_once, resize_once, button_image_paths, sprite, optimal_zoom_w,optimal_zoom_h
     ww,hh = 500,500
 
     w.delete(sprite)
@@ -118,8 +116,8 @@ def show_image(f):
         try:
             current_image = Image.open(f)
             open_once = True
-            current_image = current_image.resize((int(round(ww/(0.5**zoom))),int(round(hh/(0.5**zoom)))),Image.ANTIALIAS)
-            pi = ImageTk.PhotoImage(current_image)
+            current_image_resized = current_image.resize((int(round(optimal_zoom_w*ww/(0.5**zoom))),int(round(optimal_zoom_h*hh/(0.5**zoom)))),Image.ANTIALIAS)
+            pi = ImageTk.PhotoImage(current_image_resized)
             resize_once = True
         except:
             return
@@ -137,17 +135,17 @@ def try_to_save():
     # Vars and StringVars should be saved to xml, this is only called if autosave was enabled
 
     # Image name, var fields, string_var fields
-    root = ET.Element("Image")
+    myroot = ET.Element("Image")
     f =  os.path.splitext(current_file)[0]
-    ET.SubElement(root,"ImageFileName").text = os.path.basename(f+".jpg")
+    ET.SubElement(myroot,"ImageFileName").text = os.path.basename(f+".jpg")
     for label in OPTION_LABELS:
         true_label = label.replace(" ","")
         if "FIELD" in OPTION_NAMES[OPTION_LABELS.index(label)][0]:
-            ET.SubElement(root,true_label).text = str(string_vars[len(OPTION_LABELS)-1-OPTION_LABELS.index(label)].get())
+            ET.SubElement(myroot,true_label).text = str(string_vars[len(OPTION_LABELS)-1-OPTION_LABELS.index(label)].get())
         else:
-            ET.SubElement(root,true_label).text = str(vars[OPTION_LABELS.index(label)].get())
+            ET.SubElement(myroot,true_label).text = str(vars[OPTION_LABELS.index(label)].get())
 
-    tree = ET.ElementTree(root)
+    tree = ET.ElementTree(myroot)
     tree.write(f+".xml",encoding="utf-8", xml_declaration=True)
 
 def selection(*args):
@@ -208,6 +206,7 @@ def ask(): # Open image file and see if xml exists
 
     debug("After importing image, autosave is "+str(autosave))
     zoom = 0
+    open_once = False
 
 
 def export(): # Export a single file in xml format
@@ -225,8 +224,13 @@ def about():
 zoom = 0
 x_image = 0
 y_image = 0
+def argmax(iterable):
+    return max(enumerate(iterable), key=lambda x: x[1])[0]
+
+optimal_zoom_w = 1
+optimal_zoom_h = 1
 def resize(s):
-    global zoom,resize_once, x_image, y_image
+    global zoom,resize_once, x_image, y_image, canvas_s, optimal_zoom_w, optimal_zoom_h
     resize_once = False
     if s == "zoomin":
         zoom += 1
@@ -236,10 +240,24 @@ def resize(s):
         zoom = -5
     if zoom > 4:
         zoom = 4
-    if s == "original":
-        zoom = 0
+    if s == "center":
         x_image= 0
         y_image = 0
+        optimal_zoom_h = 1
+        optimal_zoom_w = 1
+    if s == "optimal":
+        x_image = 0
+        y_image = 0
+        cw, ch = current_image.size
+        print cw,ch
+        if cw >= ch:
+            optimal_zoom_w = 655.0/500.0
+            optimal_zoom_h = (ch*1.0/cw)*optimal_zoom_w
+        else:
+            optimal_zoom_h = 655.0/500.0
+            optimal_zoom_w = (cw*1.0/ch)*optimal_zoom_h
+
+
 
 def toolkit(event,i,button):
     if i == 0:
@@ -251,7 +269,7 @@ def toolkit(event,i,button):
 
 
 button_images = []
-button_image_paths = ["open","original","optimal","zoomin","zoomout","qm","label"]
+button_image_paths = ["open","center","optimal","zoomin","zoomout","qm","label"]
 def createButton(i,canvas):
     global button_images
     if button_image_paths[i] == "label":
@@ -259,7 +277,7 @@ def createButton(i,canvas):
         canvas.create_window(87*i+10,10, anchor=tk.NW,window=label)
         return
     button = tk.Button(canvas)
-    img = Image.open(button_image_paths[i]+".jpg")
+    img = Image.open("./utils/"+button_image_paths[i]+".jpg")
     img = img.resize((40,40),Image.ANTIALIAS)
     ip = ImageTk.PhotoImage(img)
     button_images.append(ip)
@@ -356,6 +374,8 @@ def fce(myX):
         true_height = 156
         popup_images = []
         toplevel = tk.Toplevel()
+
+        toplevel.resizable(width=False, height=False)
         current_toplevel = toplevel
         toplevel.protocol("WM_DELETE_WINDOW", closed_popup)
         # We need 150x150 per image. First we obtain the length of images from the option names
@@ -396,7 +416,7 @@ def fce(myX):
                     img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
                 else:
                     img = Image.open("./labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+".jpg"))
-                print OPTION_NAMES[x_option]
+                debug(OPTION_NAMES[x_option])
                 img = img.resize((150,150),Image.ANTIALIAS)
                 ip = ImageTk.PhotoImage(img)
                 popup_images.append(ip)
@@ -413,6 +433,45 @@ def enter_field(sv):
     debug("Trying to save from text entry capture, autosave is "+str(autosave))
     if autosave:
         try_to_save()
+
+#### Help - About, popup
+
+about_text = "Steps for annotating an image\n" \
+             "1) Using the 'Open' button from the top left corner, import your .jpg file\n" \
+             "2) Either select values from the drop down menus to the right, or use the '+' symbol\n" \
+             "to open a window for visual selection of the leaf features\n" \
+             "3) Optionally insert contributor and species name\n" \
+             "4) The autosave feature is enabled, meaning that any changes are automatically saved\n\n" \
+             "Created by Dimitris Trigkakis in association with Justin Preece and Pankaj Jaiswal"
+def about():
+    global popup_images, popup_canvas, current_toplevel, about_text
+
+    true_width = 472
+    true_height = 140
+    toplevel = tk.Toplevel()
+
+    toplevel.resizable(width=False, height=False)
+    # We need 150x150 per image. First we obtain the length of images from the option names
+
+    # Thus if we have 8 images only then do we have another line
+    w = true_width # width for the Tk root
+    h = true_height # height for the Tk root
+
+    # get screen width and height
+    ws = root.winfo_screenwidth() # width of the screen
+    hs = root.winfo_screenheight() # height of the screen
+
+    # calculate x and y coordinates for the Tk root window
+    x = (ws/2) - (w/2)
+    y = (hs/2) - (h/2)
+
+    toplevel.geometry('%dx%d+%d+%d' % (w, h, x, y))
+
+    popup_frame = tk.Frame(toplevel, width=w, height=h, bg="grey", colormap="new", relief=tk.FLAT, borderwidth=4)
+    popup_frame.grid()
+    w = tk.Label(popup_frame, text=about_text,borderwidth = 5)
+    w.grid(row=0)
+
 
 ################## Fields
 labels = []
@@ -436,6 +495,7 @@ for i in range(9):#len(OPTIONS)):
 
     if "FIELD" in OPTION_NAMES[i][0]:
         sv = tk.StringVar()
+        sv.set("None") # default value
         sv.trace("w", lambda name, index, mode, sv=sv: enter_field(sv))
         string_vars.append(sv)
         e = tk.Entry(myframe,textvariable=sv)
@@ -458,7 +518,6 @@ for i in range(9):#len(OPTIONS)):
             b = tk.Button(myframe_field, text="+", command=fce(i), width=2, height = 1)
             b.pack(side=tk.RIGHT)
 
-
-
 root.after(30,update_image)
+root.resizable(width=False, height=False)
 root.mainloop() # starts the mainloop
