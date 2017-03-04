@@ -245,7 +245,6 @@ def resize(s):
         x_image = 0
         y_image = 0
         cw, ch = current_image.size
-        print cw,ch
         if cw >= ch:
             optimal_zoom_w = 655.0/500.0
             optimal_zoom_h = (ch*1.0/cw)*optimal_zoom_w
