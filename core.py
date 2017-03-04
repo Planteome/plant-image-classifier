@@ -75,12 +75,6 @@ y = (hs/2) - (h/2)
 root.geometry('%dx%d+%d+%d' % (w, h, x, y)) # set the dimensions of the screen and where it is placed
 
 #### Intermediate steps
-
-pi = None
-images = []
-LENGTH = 0
-
-memory = None
 OPTIONS = [2,2,2,2,2,2,2]
 OPTION_LABELS = ["Leaf","Leaf Type","Leaf Shape","Leaf base shape","Leaf tip shape","Leaf margin","Leaf venation","Species","Contributor"]
 OPTION_NAMES = [["YES","NO"],["SIMPLE","COMPOUND"],["ACEROSE","AWL-SHAPED","GLADIATE","HASTATE","CORDATE","DELTOID","LANCEOLATE","LINEAR","ELLIPTIC","ENSIFORM","LYRATE",
@@ -89,23 +83,39 @@ OPTION_NAMES = [["YES","NO"],["SIMPLE","COMPOUND"],["ACEROSE","AWL-SHAPED","GLAD
                    ["AEQUILATERAL","ATTENUATE","AURICULATE","CORDATE","CUNEATE","HASTATE","OBLIQUE","ROUNDED","SAGITTATE","TRUNCATE"],
                    ["CIRROSE","CUSPIDATE","ACUMINATE","ACUTE","EMARGINATE","MUCRONATE","APICULATE","ARISTATE","MUCRONULATE","MUTICOUS","ARISTULATE","CAUDATE","OBCORDATE","OBTUSE","RETUSE","ROUNDED","SUBACUTE","TRUNCATE"]
                    ,["BIDENTATE","BIFID","DENTATE","DENTICULATE","BIPINNATIFID","BISERRATE","DIGITATE","DISSECTED","CLEFT","CRENATE","DIVIDED","ENTIRE","CRENULATE","CRISPED","EROSE","INCISED","INVOLUTE","LACERATE","PEDATE","PINNATIFID","LACINIATE","LOBED","PINNATILOBATE","PINNATISECT","LOBULATE","PALMATIFID","REPAND","REVOLUTE","PALMATISECT","PARTED","RUNCINATE","SERRATE","SERRULATE","SINUATE","TRIDENTATE","TRIFID","TRIPARTITE","TRIPINNATIFID"],["RETICULATE","PARALLEL"],["SPECIES FIELD"],["CONTRIBUTOR FIELD"]]
+
+# Image manipulation variables
 current_image = None
 current_image_resized = None
 pi = None
 autosave = False
 current_file = None
 
+# Image view manipulation
+open_once = False
+resize_once = False
+sprite = None
+zoom = 0
+x_image = 0
+y_image = 0
+optimal_zoom_w = 1
+optimal_zoom_h = 1
+
+# Ribbon variables
+
+button_images = []
+button_image_paths = ["open","center","optimal","zoomin","zoomout","qm","label"]
+
 def debug(o):
     print "debug: "+str(o)
+
+# Image manipulation routines
 
 def update_image():
     global root
     root.after(10,update_image)
     show_image(current_file)
 
-open_once = False
-resize_once = False
-sprite = None
 def show_image(f):
     global pi,canvas_s, zoom, x_image,y_image, current_image, open_once, resize_once, button_image_paths, sprite, optimal_zoom_w,optimal_zoom_h
     ww,hh = 500,500
@@ -124,8 +134,6 @@ def show_image(f):
     else:
         sprite = w.create_image(x_image+canvas_s/2, y_image+canvas_s/2, image=pi)
 
-def load(img):
-    images.append(img)
 
 def try_to_save():
     global vars,string_vars, current_file
@@ -209,26 +217,14 @@ def ask(): # Open image file and see if xml exists
     open_once = False
 
 
-def export(): # Export a single file in xml format
-    global memory
-    # save options during events, export them in the end
-    # when an image is loaded, its constituents are loaded from memory
-    # when an image field changes, it is saved to memory
-    # export all memory to csv
-    pickle.dump(memory, open("save.p", "wb"))
 
-##################
+################## Ribbon / Tools
 def about():
     print "HELP"
 
-zoom = 0
-x_image = 0
-y_image = 0
 def argmax(iterable):
     return max(enumerate(iterable), key=lambda x: x[1])[0]
 
-optimal_zoom_w = 1
-optimal_zoom_h = 1
 def resize(s):
     global zoom,resize_once, x_image, y_image, canvas_s, optimal_zoom_w, optimal_zoom_h
     resize_once = False
@@ -257,8 +253,6 @@ def resize(s):
             optimal_zoom_h = 655.0/500.0
             optimal_zoom_w = (cw*1.0/ch)*optimal_zoom_h
 
-
-
 def toolkit(event,i,button):
     if i == 0:
         button.after(200,ask)
@@ -267,9 +261,6 @@ def toolkit(event,i,button):
     else:
         resize(button_image_paths[i])
 
-
-button_images = []
-button_image_paths = ["open","center","optimal","zoomin","zoomout","qm","label"]
 def createButton(i,canvas):
     global button_images
     if button_image_paths[i] == "label":
@@ -285,21 +276,17 @@ def createButton(i,canvas):
     canvas.create_window(40*i+10,10, anchor=tk.NW, window=button)
     button.bind("<Button-1>",lambda event,options=i,myself=button: toolkit(event,options,myself))
 
-# Create windows
+# Create windows - canvas
 current_toplevel = None
+canvas_s = 655
 
 l1 = tk.Label(root) # bg="black",
 l1.pack(pady=0,fill=tk.X)
 
-canvas_s = 655
 frame_canvas = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.SUNKEN ,borderwidth =4)
 frame_canvas.pack(side=tk.LEFT,padx=20)
-import ttk
-h = ttk.Scrollbar(root, orient = tk.HORIZONTAL)
-v = ttk.Scrollbar(root, orient = tk.VERTICAL)
-w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s,scrollregion = (0, 0, 2000, 2000),yscrollcommand = v.set, xscrollcommand = h.set)
-h['command'] = w.xview
-v['command'] = w.yview
+
+w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s)
 
 x_p,y_p,x,y = 0,0,0,0
 pressed = 0
@@ -329,15 +316,8 @@ for i in range(len(button_image_paths)):
     createButton(i,w)
 
 w.create_rectangle(0, 0, canvas_s, canvas_s, fill="black")
-
 frame = tk.Frame(l1,width=300, height=800,  colormap="new", relief=tk.RIDGE ,borderwidth =4)
 frame.pack(pady=30,padx=10,fill=tk.BOTH)
-
-
-# Open Image File
-#label_button =  tk.Label(l1, width=50)
-#b = tk.Button(frame, text="Open Image File", command=ask, width=14, height = 1)
-#b.pack(pady=20,padx=0)
 
 # Hover effect
 popup_canvas = None
@@ -517,6 +497,8 @@ for i in range(9):#len(OPTIONS)):
         if i != 0:
             b = tk.Button(myframe_field, text="+", command=fce(i), width=2, height = 1)
             b.pack(side=tk.RIGHT)
+
+#### Finalize window
 
 root.after(30,update_image)
 root.resizable(width=False, height=False)
