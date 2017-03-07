@@ -3,7 +3,7 @@ so your cmd would look something like
 C:\Users\user\PycharmProjects\myproject> C:\PathTo\pyinstaller.exe --onefile --windowed myprogram.py'''
 
 import Tkinter as tk
-import ImageTk
+from PIL import ImageTk
 import tkFont
 from PIL import Image
 import tkFileDialog as fd
@@ -12,6 +12,13 @@ import pickle
 import os
 import xml.etree.ElementTree as ET
 
+# Determine if we are using ubuntu
+import platform
+linux_flag = False
+sysname = platform.system()
+if sysname == "Linux":
+	linux_flag = True
+print linux_flag
 # Tooltips
 
 class ToolTip(object):
@@ -264,7 +271,10 @@ def createButton(i,canvas):
     global button_images
     if button_image_paths[i] == "label":
         label = tk.Label(text="Autosave is enabled",pady=1)
-        canvas.create_window(87*i+10,10, anchor=tk.NW,window=label)
+	if linux_flag:
+        	canvas.create_window(87*i,10,anchor=tk.NW,window=label)
+	else:
+		canvas.create_window(87*i+10,10, anchor=tk.NW,window=label)
         return
     button = tk.Button(canvas)
     img = Image.open("./utils/"+button_image_paths[i]+".jpg")
@@ -400,7 +410,6 @@ def fce(myX):
                 ip = ImageTk.PhotoImage(img)
                 popup_images.append(ip)
                 label = tk.Label(popup_frame, image=ip)
-                label.pack()
                 label.grid(row=yy,column=xx)
                 label.bind("<Button-1>",lambda event,options=x_option,e=xx+wn*yy: popup_command(e,options))
                 #createToolTip(label, OPTION_NAMES[x_option][xx+wn*yy]) # to remove tooltips
@@ -490,8 +499,13 @@ for i in range(9):#len(OPTIONS)):
         myframe_field.pack(pady=0, fill=tk.Y)
 
         r = tk.OptionMenu(myframe_field, var, *(args_1), command = selection)
+	width_frame = 0
+	if linux_flag:
+		width_frame = 22
+	else:
+		width_frame = 25
 
-        r.config(width=25,height = 1,font=tkFont.Font(family="Calibri", size=11))
+        r.config(width=width_frame,height = 1,font=tkFont.Font(family="Calibri", size=11))
         r.pack(side=tk.LEFT)
         if i != 0:
             b = tk.Button(myframe_field, text="+", command=fce(i), width=2, height = 1)
