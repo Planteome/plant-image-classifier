@@ -272,7 +272,7 @@ def resize(s):
 def toolkit(event,i,button):
     if i == 0:
         button.after(200,ask)
-    elif i == 5:
+    elif i == 4:
         about()
     else:
         resize(button_image_paths[i])
@@ -284,7 +284,7 @@ def createButton(i,canvas):
 	if linux_flag:
         	canvas.create_window(87*i,10,anchor=tk.NW,window=label)
 	else:
-		canvas.create_window(87*i+10,10, anchor=tk.NW,window=label)
+		canvas.create_window(87*i+90,10, anchor=tk.NW,window=label)
         return
     button = tk.Button(canvas)
     img = Image.open("./utils/"+button_image_paths[i]+".jpg")
