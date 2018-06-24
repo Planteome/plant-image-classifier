@@ -1,11 +1,11 @@
-''' Assume windows has python. Make sure python has no pyinstaller (use pip uninstall pyinstaller for the windows python installation)
-Then install pyinstaller in a virtualenvironment. Use the command pyinstaller with --windowed --onefile core.py
+'''
+Python Package Requirements: Pillow
 Plant image classifier v0.1
 '''
 
-from misc import *
 import tkinter as tk
 from PIL import ImageTk, Image
+from src.misc import *
 
 from tkinter import font as tkFont
 from tkinter import filedialog as fd
@@ -732,7 +732,17 @@ w = tk.Canvas(frame_canvas, width=canvas_s, height=canvas_s)
 # Sunkable button, annotation on/off
 
 # Read configurations
-f=open("../settings.conf","r")
+f = None
+try:
+    f=open("../settings.conf","r")
+except:
+    try:
+        f=open("./settings.conf","r")
+    except:
+        debug("The file settings.conf was not found in the same folder as the executable, or in the parent folder")
+        exit()
+
+
 configurations = f.readlines()
 if "mouse-1" in configurations[0]:
     binder = ["<ButtonPress-1>","<ButtonRelease-1>"]
@@ -750,6 +760,8 @@ if "mouse-3" in configurations[1]:
 
 if "white" or "grey" or "black" in configurations[2]:
     draw_box_color = configurations[2].strip('\n')
+util_path = configurations[3].strip('\n')+"/"
+labels_path = configurations[4].strip('\n')+"/"
 
 
 w.pack()
@@ -776,17 +788,17 @@ def createButton(i,canvas):
 
     if button_image_paths[i] == "annotation_off":
         try:
-            img = Image.open("../utils/"+button_image_paths[i]+".jpg")
+            img = Image.open(util_path+button_image_paths[i]+".jpg")
         except:
-            img = Image.open("../utils/"+button_image_paths[i]+".png")
+            img = Image.open(util_path+button_image_paths[i]+".png")
         button_images.append(ImageTk.PhotoImage(img.resize((25,25),Image.ANTIALIAS)))
         return
 
     button = tk.Button(canvas)
     try:
-        img = Image.open("../utils/"+button_image_paths[i]+".jpg")
+        img = Image.open(util_path+button_image_paths[i]+".jpg")
     except:
-        img = Image.open("../utils/"+button_image_paths[i]+".png")
+        img = Image.open(util_path+button_image_paths[i]+".png")
 
     img = img.resize((25,25),Image.ANTIALIAS)
     ip = ImageTk.PhotoImage(img)
@@ -874,13 +886,13 @@ def fce(myX):
 
                 # If in certain group, append 2 to certain category
                 if (x_option == 3 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "CORDATE"):
-                    img = Image.open("../labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                    img = Image.open(labels_path+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
                 elif (x_option == 3 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "ROUNDED"):
-                    img = Image.open("../labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                    img = Image.open(labels_path+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
                 elif (x_option == 4 and str(OPTION_NAMES[x_option][xx+wn*yy]) == "TRUNCATE"):
-                    img = Image.open("../labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
+                    img = Image.open(labels_path+str(OPTION_NAMES[x_option][xx+wn*yy]+"2.jpg"))
                 else:
-                    img = Image.open("../labels/"+str(OPTION_NAMES[x_option][xx+wn*yy]+".jpg"))
+                    img = Image.open(labels_path+str(OPTION_NAMES[x_option][xx+wn*yy]+".jpg"))
 
                 # If option name is the pre-selected one, put a nice red box around it
 

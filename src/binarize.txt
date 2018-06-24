@@ -1,0 +1,4 @@
+Assume windows has python. Make sure python has no pyinstaller (use pip uninstall pyinstaller for the windows python installation)
+Then install pyinstaller in a python virtual environment (preferrably with as few packages as possible). Use the command pyinstaller with --windowed --onefile core.py inside the src folder
+This leads to a dist and build folder. You may extract the executable from the dist folder, and put it inside the binaries folder, or in the root folder alongside settings.conf
+The compiled binaries require settings.conf to be either in the same folder or in the parent folder
